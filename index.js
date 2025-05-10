@@ -92,7 +92,7 @@ async function run() {
 
 
     // User Collection
-    app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+    app.get('/users', async (req, res) => {
       // console.log(req.headers)
       const result = await userCollection.find().toArray();
       res.send(result)
@@ -184,7 +184,7 @@ async function run() {
       }
     });
 
-    app.post('/courses', verifyToken, verifyAdmin, async (req, res) => {
+    app.post('/courses',  async (req, res) => {
       const course = req.body;
       const result = await courseCollection.insertOne(course);
       res.send(result)
@@ -221,6 +221,7 @@ async function run() {
       const result = await classroomCollection.find().toArray();
       res.send(result);
     })
+
     app.get('/classroom/:code', async (req, res) => {
       // const code = req.params.code.trim().toLowerCase(); // normalize
       const result = await classroomCollection.findOne({ class_code:  req.params.code });
@@ -310,7 +311,9 @@ async function run() {
 }
 run().catch(console.dir);
 
-
+// DB_USER = cgSaviorAdmin
+// DB_PASSWORD = WnczohkZW0kCsuHW
+// ACCESS_TOKEN_SECRET=c70cfa3ede1ec0e8db8816fd5fc77f24c9552f99240322aa4d747b899eb9dc441aa02b70ba049001414d8574a6278c93585d2282221e774772f1b07e347cd41a
 
 
 
