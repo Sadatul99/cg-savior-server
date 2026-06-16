@@ -99,7 +99,7 @@ async function run() {
     })
 
     // client side e useAdmin check korar jonno ei code
-    app.get('/users/admin/:email', verifyToken, async (req, res) => {
+    app.get('/users/admin/:email', verifyToken, async (req, res) => {     // Do not touch this part
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' })
@@ -113,7 +113,7 @@ async function run() {
       res.send({ admin });
     })
 
-    app.get('/users/faculty/:email', verifyToken, async (req, res) => {
+    app.get('/users/faculty/:email', verifyToken, async (req, res) => {  // Do not touch this part
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' })
@@ -147,7 +147,7 @@ async function run() {
     })
 
     // PATCH — Update user role (Admin, Faculty, User, etc.)
-    app.patch('/users/role/:id', verifyToken, verifyAdmin, async (req, res) => {
+    app.patch('/users/role/:id', async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
 
@@ -197,6 +197,8 @@ async function run() {
       res.send(result);
     });
 
+
+    
     // Resource Collection
     app.get('/resources', async (req, res) => {
       const result = await resourceCollection.find().toArray();
@@ -224,7 +226,7 @@ async function run() {
 
     app.get('/classroom/:code', async (req, res) => {
       // const code = req.params.code.trim().toLowerCase(); // normalize
-      const result = await classroomCollection.findOne({ class_code:  req.params.code });
+      const result = await classroomCollection.findOne({ class_code: req.params.code });
       res.send(result);
     })
 
@@ -251,11 +253,22 @@ async function run() {
       }
     });
 
-    app.delete('/classroom/:id', verifyToken, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await classroomCollection.deleteOne(query);
-      res.send(result);
+    app.delete('/classroom/delete-with-resources/:code', async (req, res) => {
+      const classCode = req.params.code;
+
+      try {
+        const classResult = await classroomCollection.deleteOne({ class_code: classCode });
+        const resourceResult = await classResourcesCollection.deleteMany({ class_code: classCode });
+
+        res.send({
+          message: 'Class and associated resources deleted successfully',
+          classDeleted: classResult.deletedCount,
+          resourcesDeleted: resourceResult.deletedCount,
+        });
+      } catch (error) {
+        console.error('Deletion failed:', error);
+        res.status(500).send({ message: 'Server error during deletion' });
+      }
     });
 
     // classResources Collection
