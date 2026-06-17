@@ -1,10 +1,23 @@
 const express = require('express');
 const cors = require('cors');
+const { connectDB } = require('./config/db');
+
 const app = express();
+let dbReady;
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
+
+app.use(async (req, res, next) => {
+  try {
+    dbReady = dbReady || connectDB();
+    await dbReady;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Routes
 app.use('/jwt', require('./routes/authRoutes'));
