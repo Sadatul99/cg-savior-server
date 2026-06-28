@@ -1,5 +1,6 @@
 const { getDB } = require('../config/db');
 const { ObjectId } = require('mongodb');
+const { uploadResourceFile } = require('../services/googleDriveService');
 
 const getAllResources = async (req, res) => {
   const db = getDB();
@@ -14,6 +15,24 @@ const createResource = async (req, res) => {
   res.send(result);
 };
 
+const uploadResourceToDrive = async (req, res) => {
+  try {
+    const uploadedFile = await uploadResourceFile(req.file);
+
+    res.status(201).send({
+      id: uploadedFile.id,
+      name: uploadedFile.name,
+      link: uploadedFile.webViewLink,
+    });
+  } catch (error) {
+    console.error('Google Drive upload failed:', error);
+    res.status(500).send({
+      message: 'Failed to upload file to Google Drive',
+      error: error.message,
+    });
+  }
+};
+
 const deleteResource = async (req, res) => {
   const db = getDB();
   const id = req.params.id;
@@ -24,5 +43,6 @@ const deleteResource = async (req, res) => {
 module.exports = {
   getAllResources,
   createResource,
+  uploadResourceToDrive,
   deleteResource
 };
