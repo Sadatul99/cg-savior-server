@@ -40,4 +40,14 @@ app.get('/', (req, res) => {
   res.send('CG Savior server is running');
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Global Error Caught:", err);
+  res.status(500).json({
+    message: "An internal server error occurred.",
+    error: err.message,
+    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack
+  });
+});
+
 module.exports = app;
