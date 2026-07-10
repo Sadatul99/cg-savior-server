@@ -32,6 +32,8 @@ const upload = multer({
 
 router.get('/', resourceController.getAllResources);
 router.post('/', resourceController.createResource);
+router.post('/generate-upload-url', resourceController.generateUploadUrl);
+router.post('/make-public', resourceController.makeFilePublic);
 router.post('/upload-to-drive', upload.single('file'), resourceController.uploadResourceToDrive);
 router.delete('/:id', resourceController.deleteResource);
 
