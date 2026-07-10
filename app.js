@@ -40,6 +40,10 @@ app.get('/', (req, res) => {
   res.send('CG Savior server is running');
 });
 
+app.get('/test-error', (req, res, next) => {
+  next(new Error("This is a test error to verify the global error handler"));
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("Global Error Caught:", err);

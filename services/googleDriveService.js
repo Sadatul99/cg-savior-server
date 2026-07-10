@@ -40,35 +40,44 @@ const bufferToStream = (buffer) => {
 
 const fs = require('fs');
 
-const uploadResourceFile = async ({ stream, originalname, mimetype }) => {
+const generateResumableUploadUrl = async (fileMetadata) => {
   const drive = getDriveClient();
-  const fileMetadata = {
-    name: originalname,
+  
+  const metadata = {
+    name: fileMetadata.originalname,
   };
 
   if (process.env.GOOGLE_DRIVE_FOLDER_ID) {
-    fileMetadata.parents = [process.env.GOOGLE_DRIVE_FOLDER_ID];
+    metadata.parents = [process.env.GOOGLE_DRIVE_FOLDER_ID];
   }
 
-  // Use resumable upload for all files — required for files over 5MB.
-  // The googleapis library handles chunking automatically when uploadType is 'resumable'.
-  const uploaded = await drive.files.create(
-    {
-      requestBody: fileMetadata,
-      media: {
-        mimeType: mimetype || 'application/octet-stream',
-        body: stream,
-      },
-      fields: 'id, name, webViewLink',
+  // We make a raw request to get the resumable upload URL
+  const token = await drive.context._options.auth.getAccessToken();
+  
+  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token.token}`,
+      'Content-Type': 'application/json',
+      'X-Upload-Content-Type': fileMetadata.mimetype || 'application/octet-stream'
     },
-    {
-      // Force resumable upload protocol — handles any file size safely
-      uploadType: 'resumable',
-    }
-  );
+    body: JSON.stringify(metadata)
+  });
 
+  if (!response.ok) {
+    throw new Error('Failed to create resumable upload session');
+  }
+
+  // The upload URL is returned in the Location header
+  const uploadUrl = response.headers.get('Location');
+  return uploadUrl;
+};
+
+const getFilePublicLink = async (fileId) => {
+  const drive = getDriveClient();
+  
   await drive.permissions.create({
-    fileId: uploaded.data.id,
+    fileId: fileId,
     requestBody: {
       role: 'reader',
       type: 'anyone',
@@ -76,7 +85,7 @@ const uploadResourceFile = async ({ stream, originalname, mimetype }) => {
   });
 
   const publicFile = await drive.files.get({
-    fileId: uploaded.data.id,
+    fileId: fileId,
     fields: 'id, name, webViewLink',
   });
 
@@ -85,5 +94,6 @@ const uploadResourceFile = async ({ stream, originalname, mimetype }) => {
 
 module.exports = {
   DRIVE_SCOPE,
-  uploadResourceFile,
+  generateResumableUploadUrl,
+  getFilePublicLink
 };

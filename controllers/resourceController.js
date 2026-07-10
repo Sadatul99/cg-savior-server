@@ -6,6 +6,12 @@ const getAllResources = async (req, res) => {
   const db = getDB();
   const result = await db.collection('resources').find().toArray();
   res.send(result);
+const { generateResumableUploadUrl, getFilePublicLink } = require('../services/googleDriveService');
+
+const getAllResources = async (req, res) => {
+  const db = getDB();
+  const result = await db.collection('resources').find().toArray();
+  res.send(result);
 };
 
 const createResource = async (req, res) => {
@@ -15,23 +21,33 @@ const createResource = async (req, res) => {
   res.send(result);
 };
 
-const uploadResourceToDrive = async (req, res) => {
+const generateUploadUrl = async (req, res) => {
   try {
-    if (!req.file) {
-      throw new Error('No file was provided for upload.');
+    const { originalname, mimetype } = req.body;
+    if (!originalname) {
+      return res.status(400).send({ message: 'Missing originalname in request body.' });
     }
-    // req.file already contains the uploaded file info from DriveStorage
-    res.status(201).send({
-      id: req.file.id,
-      name: req.file.name,
-      link: req.file.webViewLink,
-    });
+
+    const uploadUrl = await generateResumableUploadUrl({ originalname, mimetype });
+    res.status(200).send({ uploadUrl });
   } catch (error) {
-    console.error('Google Drive upload failed:', error);
-    res.status(500).send({
-      message: 'Failed to upload file to Google Drive',
-      error: error.message,
-    });
+    console.error('Failed to generate upload URL:', error);
+    res.status(500).send({ message: 'Failed to generate upload URL', error: error.message });
+  }
+};
+
+const makeFilePublic = async (req, res) => {
+  try {
+    const { fileId } = req.body;
+    if (!fileId) {
+      return res.status(400).send({ message: 'Missing fileId.' });
+    }
+    
+    const publicData = await getFilePublicLink(fileId);
+    res.status(200).send(publicData);
+  } catch (error) {
+    console.error('Failed to make file public:', error);
+    res.status(500).send({ message: 'Failed to complete file upload process', error: error.message });
   }
 };
 
@@ -45,6 +61,7 @@ const deleteResource = async (req, res) => {
 module.exports = {
   getAllResources,
   createResource,
-  uploadResourceToDrive,
+  generateUploadUrl,
+  makeFilePublic,
   deleteResource
 };
