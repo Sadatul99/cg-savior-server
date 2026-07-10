@@ -40,57 +40,6 @@ const bufferToStream = (buffer) => {
 
 const fs = require('fs');
 
-// Kept for clients already deployed with the browser-to-Google-Drive upload flow.
-const generateResumableUploadUrl = async ({ originalname, mimetype }) => {
-  const drive = getDriveClient();
-  const metadata = { name: originalname };
-
-  if (process.env.GOOGLE_DRIVE_FOLDER_ID) {
-    metadata.parents = [process.env.GOOGLE_DRIVE_FOLDER_ID];
-  }
-
-  const token = await drive.context._options.auth.getAccessToken();
-  const response = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token.token}`,
-        'Content-Type': 'application/json',
-        'X-Upload-Content-Type': mimetype || 'application/octet-stream',
-      },
-      body: JSON.stringify(metadata),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to create Google Drive upload session (${response.status}).`);
-  }
-
-  const uploadUrl = response.headers.get('location');
-  if (!uploadUrl) {
-    throw new Error('Google Drive did not return an upload URL.');
-  }
-
-  return uploadUrl;
-};
-
-const getFilePublicLink = async (fileId) => {
-  const drive = getDriveClient();
-
-  await drive.permissions.create({
-    fileId,
-    requestBody: { role: 'reader', type: 'anyone' },
-  });
-
-  const publicFile = await drive.files.get({
-    fileId,
-    fields: 'id, name, webViewLink',
-  });
-
-  return publicFile.data;
-};
-
 const uploadResourceFile = async ({ stream, originalname, mimetype }) => {
   const drive = getDriveClient();
   const fileMetadata = {
@@ -133,7 +82,5 @@ const uploadResourceFile = async ({ stream, originalname, mimetype }) => {
 
 module.exports = {
   DRIVE_SCOPE,
-  generateResumableUploadUrl,
-  getFilePublicLink,
   uploadResourceFile,
 };
