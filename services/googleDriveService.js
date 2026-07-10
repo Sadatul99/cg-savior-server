@@ -52,14 +52,22 @@ const uploadResourceFile = async (file) => {
     fileMetadata.parents = [process.env.GOOGLE_DRIVE_FOLDER_ID];
   }
 
-  const uploaded = await drive.files.create({
-    requestBody: fileMetadata,
-    media: {
-      mimeType: file.mimetype || 'application/octet-stream',
-      body: bufferToStream(file.buffer),
+  // Use resumable upload for all files — required for files over 5MB.
+  // The googleapis library handles chunking automatically when uploadType is 'resumable'.
+  const uploaded = await drive.files.create(
+    {
+      requestBody: fileMetadata,
+      media: {
+        mimeType: file.mimetype || 'application/octet-stream',
+        body: bufferToStream(file.buffer),
+      },
+      fields: 'id, name, webViewLink',
     },
-    fields: 'id, name, webViewLink',
-  });
+    {
+      // Force resumable upload protocol — handles any file size safely
+      uploadType: 'resumable',
+    }
+  );
 
   await drive.permissions.create({
     fileId: uploaded.data.id,

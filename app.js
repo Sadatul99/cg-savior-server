@@ -28,6 +28,7 @@ app.use('/courses', require('./routes/courseRoutes'));
 app.use('/resources', require('./routes/resourceRoutes'));
 app.use('/classroom', require('./routes/classroomRoutes'));
 app.use('/classResources', require('./routes/classResourcesRoutes'));
+app.use('/bookmarks', require('./routes/bookmarkRoutes'));
 
 // Health check endpoint (for keep-alive pings on Render free tier)
 app.get('/health', (req, res) => {
