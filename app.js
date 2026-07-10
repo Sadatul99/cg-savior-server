@@ -6,7 +6,9 @@ const app = express();
 let dbReady;
 
 // Middlewares
-app.use(cors());
+if (!process.env.VERCEL) {
+  app.use(cors());
+}
 app.use(express.json());
 
 app.use(async (req, res, next) => {
@@ -26,6 +28,11 @@ app.use('/courses', require('./routes/courseRoutes'));
 app.use('/resources', require('./routes/resourceRoutes'));
 app.use('/classroom', require('./routes/classroomRoutes'));
 app.use('/classResources', require('./routes/classResourcesRoutes'));
+
+// Health check endpoint (for keep-alive pings on Render free tier)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Test route
 app.get('/', (req, res) => {
