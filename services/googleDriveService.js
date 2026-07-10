@@ -38,6 +38,8 @@ const bufferToStream = (buffer) => {
   return stream;
 };
 
+const fs = require('fs');
+
 const uploadResourceFile = async (file) => {
   if (!file) {
     throw new Error('No file was provided for upload.');
@@ -52,6 +54,9 @@ const uploadResourceFile = async (file) => {
     fileMetadata.parents = [process.env.GOOGLE_DRIVE_FOLDER_ID];
   }
 
+  // Create stream from disk if available (diskStorage), else from buffer (memoryStorage)
+  const mediaBody = file.path ? fs.createReadStream(file.path) : bufferToStream(file.buffer);
+
   // Use resumable upload for all files — required for files over 5MB.
   // The googleapis library handles chunking automatically when uploadType is 'resumable'.
   const uploaded = await drive.files.create(
@@ -59,7 +64,7 @@ const uploadResourceFile = async (file) => {
       requestBody: fileMetadata,
       media: {
         mimeType: file.mimetype || 'application/octet-stream',
-        body: bufferToStream(file.buffer),
+        body: mediaBody,
       },
       fields: 'id, name, webViewLink',
     },

@@ -15,6 +15,8 @@ const createResource = async (req, res) => {
   res.send(result);
 };
 
+const fs = require('fs');
+
 const uploadResourceToDrive = async (req, res) => {
   try {
     const uploadedFile = await uploadResourceFile(req.file);
@@ -30,6 +32,13 @@ const uploadResourceToDrive = async (req, res) => {
       message: 'Failed to upload file to Google Drive',
       error: error.message,
     });
+  } finally {
+    // Clean up temp file from disk if it exists
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Failed to delete temp file:', err);
+      });
+    }
   }
 };
 
