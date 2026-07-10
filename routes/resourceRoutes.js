@@ -26,7 +26,7 @@ DriveStorage.prototype._removeFile = function _removeFile(req, file, cb) {
 const upload = multer({
   storage: new DriveStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50 MB to match user preference
+    fileSize: 100 * 1024 * 1024, // 100 MB
   },
 });
 
