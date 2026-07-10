@@ -15,16 +15,16 @@ const createResource = async (req, res) => {
   res.send(result);
 };
 
-const fs = require('fs');
-
 const uploadResourceToDrive = async (req, res) => {
   try {
-    const uploadedFile = await uploadResourceFile(req.file);
-
+    if (!req.file) {
+      throw new Error('No file was provided for upload.');
+    }
+    // req.file already contains the uploaded file info from DriveStorage
     res.status(201).send({
-      id: uploadedFile.id,
-      name: uploadedFile.name,
-      link: uploadedFile.webViewLink,
+      id: req.file.id,
+      name: req.file.name,
+      link: req.file.webViewLink,
     });
   } catch (error) {
     console.error('Google Drive upload failed:', error);
@@ -32,13 +32,6 @@ const uploadResourceToDrive = async (req, res) => {
       message: 'Failed to upload file to Google Drive',
       error: error.message,
     });
-  } finally {
-    // Clean up temp file from disk if it exists
-    if (req.file && req.file.path) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.error('Failed to delete temp file:', err);
-      });
-    }
   }
 };
 
