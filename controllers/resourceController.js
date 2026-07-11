@@ -92,9 +92,41 @@ const deleteResource = async (req, res) => {
   }
 };
 
+const voteResource = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { direction } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: 'Invalid resource id.' });
+    }
+
+    if (![1, -1].includes(direction)) {
+      return res.status(400).send({ message: 'Vote direction must be 1 or -1.' });
+    }
+
+    const db = getDB();
+    const result = await db.collection('resources').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $inc: { vote: direction } },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) {
+      return res.status(404).send({ message: 'Resource not found.' });
+    }
+
+    res.send({ vote: result.vote });
+  } catch (error) {
+    console.error('Resource vote failed:', error);
+    res.status(500).send({ message: 'Failed to submit vote.' });
+  }
+};
+
 module.exports = {
   getAllResources,
   createResource,
   uploadResourceToDrive,
-  deleteResource
+  deleteResource,
+  voteResource
 };

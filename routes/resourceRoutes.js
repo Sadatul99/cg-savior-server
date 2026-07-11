@@ -34,6 +34,7 @@ const upload = multer({
 router.get('/', resourceController.getAllResources);
 router.post('/', resourceController.createResource);
 router.post('/upload-to-drive', upload.single('file'), resourceController.uploadResourceToDrive);
+router.patch('/:id/vote', verifyToken, resourceController.voteResource);
 router.delete('/:id', verifyToken, verifyAdmin, resourceController.deleteResource);
 
 module.exports = router;
