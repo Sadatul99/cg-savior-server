@@ -80,7 +80,13 @@ const uploadResourceFile = async ({ stream, originalname, mimetype }) => {
   return publicFile.data;
 };
 
+const deleteResourceFile = async (fileId) => {
+  const drive = getDriveClient();
+  await drive.files.delete({ fileId });
+};
+
 module.exports = {
   DRIVE_SCOPE,
   uploadResourceFile,
+  deleteResourceFile,
 };

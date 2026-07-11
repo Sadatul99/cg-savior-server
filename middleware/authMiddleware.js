@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getDB } = require('../config/db');
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -13,17 +14,21 @@ const verifyToken = (req, res, next) => {
 };
 
 const verifyRole = role => async (req, res, next) => {
-  const email = req.decoded.email;
-  const user = await global.db.users.findOne({ email });
+  try {
+    const email = req.decoded.email;
+    const user = await getDB().collection('users').findOne({ email });
 
-  const isAuthorized =
-    role === 'admin' ? user?.role === 'admin' :
-    role === 'faculty' ? ['faculty', 'admin'].includes(user?.role) :
-    false;
+    const isAuthorized =
+      role === 'admin' ? user?.role === 'admin' :
+      role === 'faculty' ? ['faculty', 'admin'].includes(user?.role) :
+      false;
 
-  if (!isAuthorized) return res.status(403).send({ message: 'Forbidden access' });
+    if (!isAuthorized) return res.status(403).send({ message: 'Forbidden access' });
 
-  next();
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {
