@@ -27,7 +27,7 @@ const getAllResources = async (req, res) => {
 
 const createResource = async (req, res) => {
   const db = getDB();
-  const resource = req.body;
+  const resource = { ...req.body, votes: [] };
   const result = await db.collection('resources').insertOne(resource);
   res.send(result);
 };
@@ -106,17 +106,48 @@ const voteResource = async (req, res) => {
     }
 
     const db = getDB();
-    const result = await db.collection('resources').findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $inc: { vote: direction } },
-      { returnDocument: 'after' }
-    );
+    const resources = db.collection('resources');
+    const resourceId = new ObjectId(id);
+    const email = req.decoded?.email;
 
-    if (!result) {
+    if (!email) {
+      return res.status(401).send({ message: 'Unauthorized access' });
+    }
+
+    const resource = await resources.findOne({ _id: resourceId });
+    if (!resource) {
       return res.status(404).send({ message: 'Resource not found.' });
     }
 
-    res.send({ vote: result.vote });
+    const existingVote = (resource.votes || []).find(vote => vote.email === email);
+    if (existingVote?.direction === direction) {
+      return res.send({
+        vote: resource.vote || 0,
+        changed: false,
+        message: 'You have already submitted this vote.',
+      });
+    }
+
+    const scoreChange = existingVote ? direction - existingVote.direction : direction;
+    const update = existingVote
+      ? {
+          $set: { 'votes.$.direction': direction },
+          $inc: { vote: scoreChange },
+        }
+      : {
+          $push: { votes: { email, direction } },
+          $inc: { vote: scoreChange },
+        };
+    const filter = existingVote
+      ? { _id: resourceId, 'votes.email': email }
+      : { _id: resourceId, 'votes.email': { $ne: email } };
+    const result = await resources.findOneAndUpdate(filter, update, { returnDocument: 'after' });
+
+    if (!result) {
+      return res.status(409).send({ message: 'Your vote was updated elsewhere. Please try again.' });
+    }
+
+    res.send({ vote: result.vote, changed: true, direction });
   } catch (error) {
     console.error('Resource vote failed:', error);
     res.status(500).send({ message: 'Failed to submit vote.' });
